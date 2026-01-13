@@ -1,0 +1,153 @@
+import { app, BrowserWindow, clipboard, ipcMain } from "electron";
+import path from "node:path";
+import started from "electron-squirrel-startup";
+import fs from "fs";
+import https from "https";
+
+// Handle creating/removing shortcuts on Windows when installing/uninstalling.
+if (started) {
+  app.quit();
+}
+
+const assetsDir = path.join(app.getPath("userData"), "assets");
+
+if (!fs.existsSync(assetsDir)) {
+  fs.mkdirSync(assetsDir, { recursive: true });
+}
+
+let mainWindow: BrowserWindow;
+let lastText = "";
+let interval: any;
+
+const isImageURL = (text: string) => {
+  try {
+    const url = new URL(text.trim());
+    return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+};
+
+const bringToFront = () => {
+  if (!mainWindow) return;
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+
+  mainWindow.show();
+  mainWindow.focus();
+};
+
+const startChecking = () => {
+  interval = setInterval(() => {
+    const currentText = clipboard.readText();
+    if (isImageURL(currentText) && lastText !== currentText) {
+      bringToFront();
+      mainWindow.webContents.send("onURLReceived", currentText);
+      lastText = currentText;
+    }
+  }, 500);
+};
+
+const stopChecking = () => clearInterval(interval);
+
+const saveFromHttps = (e: any, url: string) => {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+
+        const file = fs.createWriteStream(assetsDir);
+        res.pipe(file);
+
+        file.on("finish", () => {
+          file.close(() => resolve(file.path));
+        });
+      })
+      .on("error", reject);
+  });
+};
+
+const saveFromBuffer = (e: any, data: ArrayBuffer, fileName: string) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const filePath = path.join(assetsDir, fileName);
+      fs.writeFile(filePath, Buffer.from(data), () => resolve(filePath));
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+const removeFile = (e: any, path: string) => {
+  try {
+    fs.unlink(path, null);
+  } catch (error) {
+    //what?
+  }
+}
+
+const createWindow = () => {
+  // Create the browser window.
+  mainWindow = new BrowserWindow({
+    width: 600,
+    height: 700,
+    minHeight: 700,
+    minWidth: 600,
+    frame: false,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      webSecurity: false,
+      allowRunningInsecureContent: true
+    },
+  });
+
+  // and load the index.html of the app.
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  } else {
+    mainWindow.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+    );
+  }
+
+  // Open the DevTools.
+  mainWindow.webContents.openDevTools();
+};
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.on("ready", createWindow);
+
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
+});
+
+app.on("activate", () => {
+  // On OS X it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
+});
+
+app.whenReady().then(() => {
+  ipcMain.on("startChecking", startChecking);
+  ipcMain.on("stopChecking", stopChecking);
+  ipcMain.on("removeRefImage", removeFile)
+  ipcMain.handle("saveFromHTTPS", saveFromHttps);
+  ipcMain.handle("saveFromBuffer", saveFromBuffer);
+});
+
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and import them here.
