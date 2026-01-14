@@ -1,25 +1,28 @@
-import React, { useEffect, useMemo } from "react";
+import React, { ReactNode, useEffect, useMemo, useRef } from "react";
 
 type ButtonActionProps = {
-  buttonText: string;
+  label: string | ReactNode;
   onClick: () => void;
   actionState?: string;
-  className: string;
+  className?: string;
+  shouldChangeText?: boolean;
 };
 
 const ButtonAction = ({
-  buttonText,
+  label,
   onClick,
   actionState = "",
   className,
+  shouldChangeText = true,
 }: ButtonActionProps) => {
-
-  const text = useMemo(() => actionState.length > 0 ? actionState : buttonText, [actionState])
+  const divRef = useRef(null);
+  const text = useMemo(
+    () => (actionState.length > 0 && shouldChangeText ? actionState : label),
+    [actionState]
+  );
 
   useEffect(() => {
-    const button = document.querySelector(
-      `.button-action.${className}`
-    ) as HTMLElement;
+    const button = divRef.current as HTMLElement;
     const timerNode = button.childNodes[1];
     if (actionState.length > 0) {
       (timerNode as HTMLElement).className = "timer timer-play";
@@ -29,10 +32,12 @@ const ButtonAction = ({
   }, [actionState]);
 
   return (
-    <div className={`button-action ${className} ${actionState.toLowerCase()}`}>
-      <div className="button-text" onClick={onClick}>
-        {text}
-      </div>
+    <div
+      ref={divRef}
+      className={`button-action ${className} ${actionState.toLowerCase()}`}
+      onClick={onClick}
+    >
+      <div className="button-text">{text}</div>
       <div className="timer"></div>
     </div>
   );

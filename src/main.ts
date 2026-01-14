@@ -10,11 +10,21 @@ if (started) {
 }
 
 const assetsDir = path.join(app.getPath("userData"), "assets");
+const statePath = path.join(app.getPath("userData"), "window_state.json");
 
 if (!fs.existsSync(assetsDir)) {
   fs.mkdirSync(assetsDir, { recursive: true });
 }
 
+const loadWindowState = () => {
+  try {
+    return JSON.parse(fs.readFileSync(statePath, "utf-8"));
+  } catch {
+    return { width: 600, height: 700 };
+  }
+};
+
+const windowBounds = loadWindowState();
 let mainWindow: BrowserWindow;
 let lastText = "";
 let interval: any;
@@ -52,6 +62,11 @@ const startChecking = () => {
 
 const stopChecking = () => clearInterval(interval);
 
+function getImageNameFromUrl(url: string) {
+  const { pathname } = new URL(url);
+  return path.basename(pathname);
+}
+
 const saveFromHttps = (e: any, url: string) => {
   return new Promise((resolve, reject) => {
     https
@@ -60,8 +75,8 @@ const saveFromHttps = (e: any, url: string) => {
           reject(new Error(`HTTP ${res.statusCode}`));
           return;
         }
-
-        const file = fs.createWriteStream(assetsDir);
+        const filePath = path.join(assetsDir, getImageNameFromUrl(url));
+        const file = fs.createWriteStream(filePath);
         res.pipe(file);
 
         file.on("finish", () => {
@@ -85,24 +100,27 @@ const saveFromBuffer = (e: any, data: ArrayBuffer, fileName: string) => {
 
 const removeFile = (e: any, path: string) => {
   try {
-    fs.unlink(path, null);
+    fs.unlink(path, () => {
+      console.log("deleted");
+    });
   } catch (error) {
     //what?
+    console.error(error);
   }
-}
+};
 
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 600,
-    height: 700,
+    width: windowBounds.width,
+    height: windowBounds.height,
     minHeight: 700,
     minWidth: 600,
     frame: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       webSecurity: false,
-      allowRunningInsecureContent: true
+      allowRunningInsecureContent: true,
     },
   });
 
@@ -144,9 +162,22 @@ app.on("activate", () => {
 app.whenReady().then(() => {
   ipcMain.on("startChecking", startChecking);
   ipcMain.on("stopChecking", stopChecking);
-  ipcMain.on("removeRefImage", removeFile)
+  ipcMain.on("removeRefImage", removeFile);
   ipcMain.handle("saveFromHTTPS", saveFromHttps);
   ipcMain.handle("saveFromBuffer", saveFromBuffer);
+  let resizeTimeout: any;
+  mainWindow.on("resize", () => {
+    try {
+      clearTimeout(resizeTimeout);
+    } catch (error) {
+      //what
+    }
+
+    resizeTimeout = setTimeout(() => {
+      const { width, height } = mainWindow.getBounds();
+      fs.writeFileSync(statePath, JSON.stringify({ width, height }));
+    }, 200);
+  });
 });
 
 // In this file you can include the rest of your app's specific main process

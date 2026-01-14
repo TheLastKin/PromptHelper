@@ -9,7 +9,8 @@ html {
   font-family: sans-serif;
 }
 ::-webkit-scrollbar {
-  width: 2px;
+  width: 4px;
+  height: 2px;
 }
 
 /* track */
@@ -37,6 +38,7 @@ html {
   z-index: 9999;
 }
 .container {
+  position: relative;
   width: 100%;
   height: 100vh;
   background-color: rgb(31, 37, 69) !important;
@@ -86,6 +88,7 @@ html {
 }
 .action-button {
   margin-left: 8px;
+  width: fit-content;
   background-color: transparent;
   cursor: pointer;
   font-size: 12px;
@@ -115,6 +118,7 @@ html {
 }
 .button-mode {
   position: relative;
+  width: fit-content;
   padding: 6px 10px;
   border-radius: 3px;
   border: 1.5px solid white;
@@ -141,7 +145,7 @@ html {
   position: relative;
   top: 2px;
   margin-left: 3px;
-  font-size: 14px;
+  font-size: 13px;
 }
 .description {
   position: absolute;
@@ -248,7 +252,27 @@ html {
   margin-top: 0;
   text-align: center;
 }
+.category-input-container {
+  position: relative;
+  width: 100%;
+  height: auto;
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+  justify-content: center;
+}
+.category-error {
+  position: absolute;
+  pointer-events: none;
+  bottom: -20px;
+  left: 20px;
+  font-size: 11px;
+  color: orangered;
+  font-weight: lighter;
+  font-style: italic;
+}
 .form-input {
+  position: relative;
   width: 100%;
   height: calc(100% - 60px);
   display: flex;
@@ -258,7 +282,7 @@ html {
 }
 .form-left {
   position: relative;
-  width: 50%;
+  width: calc(50% - 10px);
   height: 100%;
 }
 .image-container {
@@ -283,6 +307,7 @@ html {
   height: calc(100% - 4px);
   border: 2px dashed rgba(255, 255, 255, 0.5);
   border-radius: 10px;
+  z-index: 2;
 }
 .image-container > span {
   pointer-events: none;
@@ -290,7 +315,7 @@ html {
   width: 80%;
 }
 .form-right {
-  flex: 1;
+  width: calc(50% - 10px);
   height: calc(100% - 20px);
 }
 .sm-content {
@@ -311,8 +336,13 @@ html {
 .category-input:focus {
   outline: none;
 }
+.hierarchy {
+  display: block;
+  width: 100%;
+}
 .hierarchy-tree {
-  flex: 1;
+  width: 100%;
+  height: 40px;
   display: flex;
   margin-top: 10px;
   flex-wrap: nowrap;
@@ -321,10 +351,12 @@ html {
 .hierarchy-node {
   display: block;
   padding: 3px 5px;
+  height: 20px;
   background-color: rgba(213, 213, 213, 0.299);
   font-size: 14px;
   font-weight: lighter;
   border-radius: 3px;
+  white-space: nowrap;
   cursor: pointer;
 }
 .to {
@@ -369,27 +401,33 @@ html {
 .tag-input:focus {
   outline: none;
 }
-.tags {
-  margin-top: 15px;
-}
-.main-tags-group {
+.main-tag-group {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
+  height: 30px;
+  overflow-x: auto;
   margin-top: 10px;
-  overflow-y: auto;
 }
-.main-tag {
+.tag {
+  position: relative;
   display: block;
-  width: auto;
-  height: 20px;
+  width: fit-content;
+  height: 18px;
   padding: 3px 5px;
-  background-color: brown;
+  background-color: bisque;
   border-radius: 3px;
   font-size: 14px;
   font-weight: lighter;
   cursor: pointer;
-  margin-left: 10px;
+}
+.main-tag {
+  background-color: brown;
+}
+.main-tag-group span {
+  white-space: nowrap;
+  margin-right: 5px;
 }
 .tags > div:nth-child(2) {
   margin-top: 15px;
@@ -397,6 +435,7 @@ html {
 .secondary-tags-group {
   display: block;
   margin-top: 10px;
+  margin-bottom: 10px;
   width: 100%;
   height: 100px;
   overflow-y: auto;
@@ -404,19 +443,12 @@ html {
 .secondary-tags-group > div {
   display: flex;
   width: 100%;
-  column-gap: 10px;
+  column-gap: 5px;
+  row-gap: 5px;
   flex-wrap: wrap;
 }
 .secondary-tag {
-  display: block;
-  width: auto;
-  height: 20px;
-  padding: 3px 5px;
   background-color: rgb(79, 138, 189);
-  border-radius: 3px;
-  font-size: 14px;
-  font-weight: lighter;
-  margin-top: 5px;
 }
 .note-input {
   display: block;
@@ -439,7 +471,9 @@ html {
   font-weight: lighter !important;
 }
 .button-action {
+  position: relative;
   display: flex;
+  width: fit-content;
   align-items: center;
   justify-content: center;
   padding: 5px 10px;
@@ -552,7 +586,7 @@ html {
 }
 .timer-play {
   opacity: 1;
-  transition: transform 3s linear;
+  transition: transform 1.5s linear;
   transform: translateX(-100%);
 }
 .saved {
@@ -568,4 +602,237 @@ html {
 }
 .failed > .button-text {
   color: orangered;
+}
+.tag:hover > .delete-tag {
+  display: block;
+}
+.delete-tag {
+  position: absolute;
+  display: none;
+  top: -5px;
+  right: -7px;
+  font-size: 15px;
+}
+.move-to-bottom {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  top: 0;
+  left: 0;
+  opacity: 1;
+  transition:
+    transform 0.5s ease-out,
+    opacity 0.5s ease-out 0.5s;
+  transform: translate();
+  pointer-events: none;
+  z-index: 2;
+}
+.move-to-bottom > img {
+  width: 100%;
+  height: 100%;
+}
+.start-moving {
+  transform: translate(calc(100vw - 55px), calc(100vh - 55px)) scale(3.33) !important;
+  opacity: 0;
+}
+.picked-refs {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  bottom: 20px;
+  right: 20px;
+  cursor: pointer;
+  border: 3px solid rgb(64, 139, 224);
+  border-radius: 6px;
+}
+.picked-refs > img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0.55;
+}
+.pick-counter {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: bold;
+  color: rgb(255, 255, 255);
+  background-color: rgba(158, 201, 250, 0.15);
+  z-index: 1;
+  pointer-events: none;
+}
+.close-all {
+  position: absolute;
+  display: none;
+  top: -10px;
+  right: -8px;
+  color: orangered;
+  width: 14px;
+  height: 14px;
+  padding: 2px;
+  border-radius: 50%;
+  background-color: white;
+  cursor: pointer;
+  z-index: 2;
+}
+.picked-refs:hover > .close-all {
+  display: block;
+}
+.viewer-modal {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+.viewer-content {
+  position: relative;
+  width: 100vw;
+  height: 90vh;
+  color: white;
+  z-index: 1001;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 20px 10px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+.viewer-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+}
+
+.viewer-content::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    transparent,
+    rgba(255, 255, 255, 0.3)
+  );
+}
+.viewer-content > h4 {
+  position: relative;
+  width: auto;
+  margin-left: 15px;
+  margin-top: 27px;
+}
+.copy-buttons {
+  position: absolute;
+  display: flex;
+  top: 20px;
+  right: 10px;
+  column-gap: 10px;
+}
+.selected-refs-list {
+  position: relative;
+  display: flex;
+  width: calc(100% - 10px);
+  height: calc(100% - 100px);
+  flex-wrap: wrap;
+  padding: 10px 5px;
+  overflow-y: scroll;
+  justify-content: space-evenly;
+  row-gap: 10px;
+}
+.selected-ref {
+  position: relative;
+  display: block;
+  width: calc(100vw / 3 - 20px);
+  height: 40vh;
+  max-width: 250px;
+  max-height: 400px;
+  background-color: #0088ff1d;
+  border: 2px solid slateblue;
+}
+.selected-ref-image {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 55%;
+  padding: 10px 0;
+}
+.selected-ref-image > img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.selected-ref-tags {
+  position: relative;
+  width: 100%;
+  height: calc(45% - 25px);
+}
+.selected-ref-main-tag {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: calc(100% - 20px);
+  padding: 0 10px;
+  overflow: hidden;
+}
+.selected-ref-secondary-tags {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 5px;
+  width: calc(100% - 20px);
+  height: calc(100% - 34px);
+  padding: 4px 10px;
+  column-gap: 5px;
+  row-gap: 5px;
+  overflow-y: auto;
+}
+.copied {
+  border-color: greenyellow;
+  background-color: rgba(172, 255, 47, 0.15);
+}
+.copy-secondary-tags{
+  position: absolute;
+  opacity: 0;
+  top: -10px;
+  right: 45px;
+  z-index: -2;
+}
+.copy-all-tags{
+  position: absolute;
+  opacity: 0;
+  top: -10px;
+  right: 5px;
+  z-index: -2;
+}
+.selected-ref:hover>.copy-secondary-tags, .selected-ref:hover>.copy-all-tags{
+  opacity: 1;
+  z-index: 2;
 }

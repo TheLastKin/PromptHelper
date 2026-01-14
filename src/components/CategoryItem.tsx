@@ -1,24 +1,26 @@
 import React, { useMemo, useState } from "react";
-import { Category, Reference } from "../util/types";
+import { AnimateItem, Category, Reference } from "../util/types";
 
 type CategoryItemProps = {
   item: Category;
   parentCategories: string[];
-  references: Reference[];
   onAddSubcategory: (parentCategories: string[]) => void;
   onAddReference: (parentCategories: string[]) => void;
-  onDeleteCategory?: (category: string) => void;
+  onDeleteCategory: (parentCategories: string[]) => void;
   onDeleteReference: (refId: number, refImagePath: string, hierarchy: string[]) => void;
+  onPickReference: (animateProps: AnimateItem, ref: Reference) => void;
+  onViewReference: (ref: Reference, parentCategories: string[]) => void;
 };
 
 const CategoryItem = ({
   item,
   parentCategories,
-  references,
   onAddSubcategory,
   onAddReference,
   onDeleteCategory,
-  onDeleteReference
+  onDeleteReference,
+  onPickReference,
+  onViewReference
 }: CategoryItemProps) => {
   const [showActions, setShowActions] = useState(false);
   const [showContent, setShowContent] = useState(true);
@@ -31,18 +33,22 @@ const CategoryItem = ({
     return classes;
   }, [showContent]);
 
-  const getReference = (refID: number) =>
-    references.find((ref) => ref.id === refID);
-
   const onTitleHover = () => setShowActions(true);
   const onTitleLeave = () => setShowActions(false);
 
   const toggleContent = () => setShowContent(!showContent);
 
   const handleDeleteReference = (refId: number, refImagePath: string, hierarchy: string[]) => () => onDeleteReference(refId, refImagePath, hierarchy)
+  const handleDeleteCategory = () => onDeleteCategory(parentCategories)
+  const handleViewReference = (ref: Reference) => () => onViewReference(ref, parentCategories)
+  const handlePickReference = (imagePath: string, ref: Reference) => (e: React.MouseEvent) => {
+    const imageNode = (e.target as HTMLElement).parentNode.childNodes[0] as HTMLElement;
+    const { x, y } = imageNode.getBoundingClientRect();
+    onPickReference({ axis: { x: x, y:y }, imagePath: imagePath, id: Date.now() }, ref)
+  }
 
   return (
-    <div className={containerClass} key={item.name}>
+    <div className={containerClass}>
       <div
         className="title-container"
         onMouseEnter={onTitleHover}
@@ -51,7 +57,7 @@ const CategoryItem = ({
         <span className="title" onClick={toggleContent}>
           {item.name}
         </span>
-        <span className="total-refs">({item.references.length} refs)</span>
+        <span className="total-refs">({item.subCategories?.length > 0 ? `${item.subCategories.length} nodes, ` : ""}{item.references.length} refs)</span>
         {showActions ? (
           <div className="action-buttons">
             <button
@@ -71,7 +77,7 @@ const CategoryItem = ({
             {!isRootCategory && (
               <button
                 className="action-button"
-                onClick={() => onDeleteCategory(item.name)}
+                onClick={handleDeleteCategory}
               >
                 Delete
               </button>
@@ -82,20 +88,20 @@ const CategoryItem = ({
         )}
       </div>
       {Array.isArray(item.subCategories) &&
-        item.subCategories.map((category: Category, i: number) => (
+        item.subCategories.map((category: Category) => (
           <CategoryItem
             key={category.name}
             item={category}
-            references={references}
             parentCategories={parentCategories.concat([category.name])}
             onAddSubcategory={onAddSubcategory}
             onAddReference={onAddReference}
             onDeleteReference={onDeleteReference}
+            onDeleteCategory={onDeleteCategory}
+            onPickReference={onPickReference}
+            onViewReference={onViewReference}
           />
         ))}
-      {item.references.map((refId: number) => {
-        const ref = getReference(refId);
-        if (!ref) return null;
+      {item.references.map((ref: Reference) => {
         return (
           <div className="refs">
             <img
@@ -103,9 +109,9 @@ const CategoryItem = ({
               alt=""
               className="ref-node-image"
             />
-            <span className="ref-node">{ref.mainTag}</span>
-            <span className="pick-node">Pick</span>
-            <span className="delete-node" onClick={handleDeleteReference(refId, ref.refImage, parentCategories)}>Delete</span>
+            <span className="ref-node" onClick={handleViewReference(ref)}>{ref.mainTag}</span>
+            <span className="pick-node" onClick={handlePickReference(ref.refImage, ref)}>Pick</span>
+            <span className="delete-node" onClick={handleDeleteReference(ref.id, ref.refImage, parentCategories)}>Delete</span>
           </div>
         );
       })}

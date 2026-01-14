@@ -6,7 +6,7 @@ import Tooltip from "./Tooltip";
 type ButtonModeProps = {
   label: string;
   modeActive: boolean;
-  description: string;
+  description?: string;
   tooltipStyle?: React.CSSProperties,
   onModeToggle: () => void;
 };
@@ -22,7 +22,7 @@ function ButtonMode({ label, modeActive, onModeToggle, description, tooltipStyle
   return (
     <div className={containerClass} onClick={onModeToggle}>
       <span>{label}</span>
-      <Tooltip description={description} tooltipStyle={tooltipStyle}/>
+      {description && <Tooltip description={description} tooltipStyle={tooltipStyle}/>}
     </div>
   );
 }

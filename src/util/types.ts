@@ -8,8 +8,14 @@ type Reference = {
 
 type Category = {
     name: string,
-    references: number[],
+    references: Reference[],
     subCategories?: Category[]
 }
 
-export { Reference, Category }
+type AnimateItem = {
+    id: number,
+    axis: { x: number, y: number },
+    imagePath: string
+}
+
+export { Reference, Category, AnimateItem }

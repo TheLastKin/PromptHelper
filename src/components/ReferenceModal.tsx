@@ -4,6 +4,8 @@ import { Category, Reference } from "../util/types";
 import Tooltip from "./Tooltip";
 import DESCRIPTION from "../util/constants";
 import ButtonAction from "./ButtonAction";
+import { IoIosCloseCircle } from "react-icons/io";
+import Tag from "./Tag";
 
 type ReferenceProps = {
   reference?: Reference;
@@ -26,7 +28,7 @@ const ReferenceModal = ({
   const [inputProps, setInputProps] = useState<
     Reference & { refImageName?: string; refImageArrayBuffer?: ArrayBuffer }
   >({
-    id: Date.now(),
+    id: -1,
     mainTag: "",
     secondaryTags: [],
     description: "",
@@ -39,12 +41,13 @@ const ReferenceModal = ({
 
   useEffect(() => {
     if (createState !== "") {
-      setTimeout(() => setCreateState(""), 3000);
+      if(createState === "success") setInputProps({ id: -1, mainTag: "", refImage: inputProps.refImage })
+      setTimeout(() => setCreateState(""), 1500);
     }
   }, [createState]);
 
   useEffect(() => {
-    if (reference) setInputProps(reference);
+    if (reference) setInputProps({ ...reference, refImage: reference.refImage ? `file://${reference.refImage}` : "" });
   }, [reference]);
 
   useEffect(() => {
@@ -126,21 +129,27 @@ const ReferenceModal = ({
     setInputProps({ ...inputProps, description: e.target.value });
   };
 
+  const deletemMainTag = () => setInputProps({...inputProps, mainTag: ""})
+
+  const deleteSecondaryTag = (tag: string) => setInputProps({...inputProps, secondaryTags: inputProps.secondaryTags.filter(t => t !== tag)})
+
+  const title = useMemo(() => inputProps.id > 0 ? `Viewing a Reference of ${parentCategories[parentCategories.length - 1]}`: `Add a Reference to ${parentCategories[parentCategories.length - 1]}`, [inputProps])
+
   return (
     <div className={modalClass}>
       <div className="backdrop" onClick={onClose}></div>
       <div className="modal-content">
         <h4>
-          Add a Reference to {parentCategories[parentCategories.length - 1]}
+          {title}
         </h4>
         <div className="form-input">
           <div className="form-left">
             <div className="image-container">
               <div
                 id="dropzone"
-                style={{ display: inputProps.refImage ? "none" : "block" }}
+                style={{ opacity: inputProps.refImage.length > 0 ? 0 : 1 }}
               ></div>
-              <span>Try dragging an image here or copy an URL</span>
+              <span>Try dragging an image here</span>
               <img
                 className="reference-image"
                 src={inputProps?.refImage}
@@ -182,17 +191,17 @@ const ReferenceModal = ({
               />
             </div>
             <div className="tags">
-              <div className="main-tags-group">
-                <div>Main Tag: </div>
+              <div className="main-tag-group">
+                <span>Main Tag: </span>
                 {inputProps.mainTag.length > 0 && (
-                  <div className="main-tag">{inputProps.mainTag}</div>
+                  <Tag title={inputProps.mainTag} className="main-tag" onDeleteTag={deletemMainTag}/>
                 )}
               </div>
               <div>Secondary Tags: </div>
               <div className="secondary-tags-group">
                 <div>
-                  {inputProps.secondaryTags.map((tag) => (
-                    <div className="secondary-tag">{tag}</div>
+                  {inputProps.secondaryTags?.map((tag) => (
+                    <Tag key={tag} title={tag} className="secondary-tag" onDeleteTag={deleteSecondaryTag}/>
                   ))}
                 </div>
               </div>
@@ -210,12 +219,12 @@ const ReferenceModal = ({
         </div>
         <ButtonAction
           className="button-cancel"
-          buttonText="Cancel"
+          label="Cancel"
           onClick={onClose}
         />
         <ButtonAction
           className="button-save"
-          buttonText="Save"
+          label="Save"
           actionState={createState}
           onClick={handleSavingReference}
         />
