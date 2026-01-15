@@ -15,7 +15,8 @@ type Category = {
 type AnimateItem = {
     id: number,
     axis: { x: number, y: number },
-    imagePath: string
+    imagePath: string,
+    transitionDelay?: number
 }
 
 export { Reference, Category, AnimateItem }

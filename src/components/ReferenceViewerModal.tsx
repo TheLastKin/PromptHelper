@@ -7,6 +7,7 @@ type ReferenceViewerModalProps = {
   show: boolean;
   refs: Reference[];
   onClose: () => void;
+  onRemoveRef: (refId: number) => void;
 };
 
 let timeout: any;
@@ -15,6 +16,7 @@ const ReferenceViewerModal = ({
   show,
   refs = [],
   onClose,
+  onRemoveRef
 }: ReferenceViewerModalProps) => {
   const [buttonState, setButtonState] = useState("");
 
@@ -34,13 +36,13 @@ const ReferenceViewerModal = ({
     <div className="viewer-modal" style={{ display: show ? "flex" : "none" }}>
       <div className="backdrop" onClick={onClose}></div>
       <div className="viewer-content">
-        <h4>You selected {refs.length} refs</h4>
+        <h4>You selected {refs.length} references</h4>
         <div className="copy-buttons">
           <ButtonAction actionState={buttonState} label="Copy all main tags" onClick={copyAllMainTags} />
         </div>
         <div className="selected-refs-list">
           {refs.map((r) => (
-            <RefCard ref={r} />
+            <RefCard key={r.id} ref={r} onRemoveRef={onRemoveRef}/>
           ))}
         </div>
       </div>

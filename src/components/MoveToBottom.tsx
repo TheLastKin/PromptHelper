@@ -20,6 +20,7 @@ const MoveToBottom = ({
       }
       style={{
         transform: `translate(${animateProps.axis.x}px, ${animateProps.axis.y}px)`,
+        transitionDelay: animateProps.transitionDelay ? `${animateProps.transitionDelay}` : "0"
       }}
     >
       <img src={"file://" + animateProps.imagePath} alt="" />

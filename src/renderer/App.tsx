@@ -9,6 +9,7 @@ import AddCategoryModal from "../components/AddCategoryModal";
 import MoveToBottom from "../components/MoveToBottom";
 import PickedRefs from "../components/PickedRefs";
 import ReferenceViewerModal from "../components/ReferenceViewerModal";
+import { BsFillPinAngleFill } from "react-icons/bs";
 
 const defaultSet: Category = {
   name: "Root Category",
@@ -60,11 +61,15 @@ const App = () => {
     parentCategories: string[];
     show: boolean;
   }>({ parentCategories: [defaultSet.name], show: false });
-  const [viewrModal, setViewerModal] = useState<{ show: boolean, selectedRefs: Reference[] }>({
+  const [viewrModal, setViewerModal] = useState<{
+    show: boolean;
+    selectedRefs: Reference[];
+  }>({
     show: false,
-    selectedRefs: []
+    selectedRefs: [],
   });
   const [animateItems, setAnimateItems] = useState<AnimateItem[]>([]);
+  const [isWindowAlwaysOnTop, setAlwaysOnTop] = useState(false)
 
   const modalRef = useRef(showReferenceModal);
   modalRef.current = showReferenceModal;
@@ -90,7 +95,7 @@ const App = () => {
     } catch (error) {
       //what
     }
-    timerId = setTimeout(() => setAnimateItems([]), 3000);
+    timerId = setTimeout(() => setAnimateItems([]), 1500);
   };
 
   const startCheckingClipboard = () => {
@@ -269,18 +274,76 @@ const App = () => {
   const onPickReference = (animeteProps: AnimateItem, ref: Reference) => {
     setAnimateItems((prev) => [...prev, animeteProps]);
     clearAnimateItem();
-    if(!viewrModal.selectedRefs.find(r => r.id === ref.id)){
-      setViewerModal({ show: false, selectedRefs: viewrModal.selectedRefs.concat([ref]) })
-    }else{
-      setViewerModal({ show: false, selectedRefs: viewrModal.selectedRefs.map(r => r.id === ref.id ? ref : r) })
+    if (!viewrModal.selectedRefs.find((r) => r.id === ref.id)) {
+      setViewerModal({
+        show: false,
+        selectedRefs: viewrModal.selectedRefs.concat([ref]),
+      });
+    } else {
+      setViewerModal({
+        show: false,
+        selectedRefs: viewrModal.selectedRefs.map((r) =>
+          r.id === ref.id ? ref : r
+        ),
+      });
     }
   };
 
-  const deselectAllRefs = () => setViewerModal({ show: false, selectedRefs: [] })
+  const deselectAllRefs = () =>
+    setViewerModal({ show: false, selectedRefs: [] });
 
-  const viewReferences = () => setViewerModal({ ...viewrModal, show: true })
+  const viewReferences = () => setViewerModal({ ...viewrModal, show: true });
 
-  const closeViewrModal = () => setViewerModal({ ...viewrModal, show: false })
+  const closeViewrModal = () => setViewerModal({ ...viewrModal, show: false });
+
+  const removeSelectedRef = (refId: number) =>
+    setViewerModal({
+      ...viewrModal,
+      selectedRefs: viewrModal.selectedRefs.filter((ref) => ref.id !== refId),
+    });
+
+  const randomPicks = () => {
+    const pickedRefs: Reference[] = [];
+    const loop = (categories: Category) => {
+      if (Array.isArray(categories.subCategories)) {
+        for (const c of categories.subCategories) {
+          const shouldPick =
+            pickedRefs.length >= 5 ? Math.random() > 0.4 : true;
+          if (shouldPick && c.references.length > 0) {
+            pickedRefs.push(
+              c.references[Math.floor(Math.random() * c.references.length)]
+            );
+          }
+          loop(c);
+        }
+      }
+    };
+    loop(categories);
+    getAnimateProps(pickedRefs);
+    setViewerModal({ show: false, selectedRefs: pickedRefs });
+  };
+
+  const getAnimateProps = (refs: Reference[]) => {
+    const props: AnimateItem[] = [];
+    for (let i = 0; i < refs.length; i++) {
+      const targetNode = document.querySelector(`#node-${refs[i].id}`)
+        .childNodes[0] as HTMLElement;
+      const { x, y } = targetNode.getBoundingClientRect();
+      props.push({
+        axis: { x: x, y: y },
+        id: refs[i].id,
+        imagePath: refs[i].refImage,
+        transitionDelay: 100 * Math.min(i, 1) + 50 * i,
+      });
+    }
+    setAnimateItems(props);
+    clearAnimateItem();
+  };
+
+  const toggleWindowMode = () => {
+    window.api.toggleWindowMode();
+    setAlwaysOnTop(!isWindowAlwaysOnTop)
+  }
 
   return (
     <div className="container">
@@ -309,7 +372,7 @@ const App = () => {
           label="Create"
           modeActive={true}
           description={DESCRIPTION.CREATE}
-          onModeToggle={toggleMode("create")}
+          onModeToggle={randomPicks}
           tooltipStyle={{ transform: "translateX(-80%)" }}
         />
       </div>
@@ -329,8 +392,23 @@ const App = () => {
       {animateItems.map((item) => (
         <MoveToBottom key={item.id} animateProps={item} />
       ))}
-      {viewrModal.selectedRefs.length > 0 && <PickedRefs refs={viewrModal.selectedRefs} onCloseAll={deselectAllRefs} onViewReferences={viewReferences}/>}
-      <ReferenceViewerModal show={viewrModal.show} refs={viewrModal.selectedRefs} onClose={closeViewrModal}/>
+      {viewrModal.selectedRefs.length > 0 && (
+        <PickedRefs
+          refs={viewrModal.selectedRefs}
+          onCloseAll={deselectAllRefs}
+          onViewReferences={viewReferences}
+        />
+      )}
+      <ReferenceViewerModal
+        show={viewrModal.show}
+        refs={viewrModal.selectedRefs}
+        onClose={closeViewrModal}
+        onRemoveRef={removeSelectedRef}
+      />
+      <div id="preview">
+        <img src="" alt="" />
+      </div>
+      <BsFillPinAngleFill className={"pin-window " + (isWindowAlwaysOnTop ? "is-on-top" : "")} onClick={toggleWindowMode}/>
     </div>
   );
 };

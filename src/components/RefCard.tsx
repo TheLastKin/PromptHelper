@@ -4,15 +4,17 @@ import Tag from "./Tag";
 import ButtonAction from "./ButtonAction";
 import { FaCopy } from "react-icons/fa";
 import { RiFileCopy2Fill } from "react-icons/ri";
+import { IoMdClose } from "react-icons/io";
 
 type RefCardProps = {
   ref: Reference;
+  onRemoveRef: (refId: number) => void 
 };
 
 let timeout1: any;
 let timeout2: any;
 
-const RefCard = ({ ref }: RefCardProps) => {
+const RefCard = ({ ref, onRemoveRef }: RefCardProps) => {
   const [buttonState1, setButtonState1] = useState("")
   const [buttonState2, setButtonState2] = useState("")
 
@@ -40,6 +42,8 @@ const RefCard = ({ ref }: RefCardProps) => {
       }, 1500);
     }
   };
+
+  const handleRemoveRef = () => onRemoveRef(ref.id)
   return (
     <div className="selected-ref" key={ref.id}>
       <div className="selected-ref-image">
@@ -70,6 +74,13 @@ const RefCard = ({ ref }: RefCardProps) => {
         label={<RiFileCopy2Fill />}
         shouldChangeText={false}
         onClick={copyAllTags}
+      />
+      <ButtonAction
+        className="remove-selected-ref"
+        actionState="removed"
+        label={<IoMdClose />}
+        shouldChangeText={false}
+        onClick={handleRemoveRef}
       />
     </div>
   );

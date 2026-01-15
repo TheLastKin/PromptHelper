@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('api', {
     saveFromHTTPS: (url: string) => ipcRenderer.invoke("saveFromHTTPS", url),
     saveFromBuffer: (buffer: Buffer, fileName: string) => ipcRenderer.invoke("saveFromBuffer", buffer, fileName),
     removeFile: (path: string) => ipcRenderer.send("removeRefImage", path),
+    toggleWindowMode: () => ipcRenderer.send("toggleWindowMode")
 });

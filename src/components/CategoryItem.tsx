@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { AnimateItem, Category, Reference } from "../util/types";
+import ImageView from "./ImageView";
 
 type CategoryItemProps = {
   item: Category;
@@ -103,10 +104,9 @@ const CategoryItem = ({
         ))}
       {item.references.map((ref: Reference) => {
         return (
-          <div className="refs">
-            <img
-              src={`file://${ref.refImage}`}
-              alt=""
+          <div key={ref.id} id={"node-" + ref.id} className="refs">
+            <ImageView
+              imagePath={`file://${ref.refImage}`}
               className="ref-node-image"
             />
             <span className="ref-node" onClick={handleViewReference(ref)}>{ref.mainTag}</span>

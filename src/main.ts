@@ -117,6 +117,7 @@ const createWindow = () => {
     minHeight: 700,
     minWidth: 600,
     frame: false,
+    icon: path.join("../assets/icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       webSecurity: false,
@@ -134,7 +135,9 @@ const createWindow = () => {
   }
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  if(!app.isPackaged){
+    mainWindow.webContents.openDevTools();
+  }
 };
 
 // This method will be called when Electron has finished
@@ -159,12 +162,25 @@ app.on("activate", () => {
   }
 });
 
+let isWindowAlwaysOnTop = false;
+
+const toggleWindowMode = () => {
+  if(isWindowAlwaysOnTop){
+    isWindowAlwaysOnTop = false
+    mainWindow.setAlwaysOnTop(false)
+  }else{
+    isWindowAlwaysOnTop = true
+    mainWindow.setAlwaysOnTop(true)
+  }
+}
+
 app.whenReady().then(() => {
   ipcMain.on("startChecking", startChecking);
   ipcMain.on("stopChecking", stopChecking);
   ipcMain.on("removeRefImage", removeFile);
   ipcMain.handle("saveFromHTTPS", saveFromHttps);
   ipcMain.handle("saveFromBuffer", saveFromBuffer);
+  ipcMain.on("toggleWindowMode", toggleWindowMode)
   let resizeTimeout: any;
   mainWindow.on("resize", () => {
     try {
