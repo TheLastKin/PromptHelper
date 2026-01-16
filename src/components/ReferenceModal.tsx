@@ -97,7 +97,7 @@ const ReferenceModal = ({
     if (e.key === "Enter") {
       const node = inputMode === "main" ? "mainTag" : "secondaryTags";
       if (
-        inputProps[node].includes(input.value) ||
+        inputProps[node]?.includes(input.value) ||
         (inputMode === "main" && inputProps.mainTag.length !== 0)
       ) {
         setTagExised(true);
@@ -107,7 +107,7 @@ const ReferenceModal = ({
           [node]:
             node === "mainTag"
               ? input.value
-              : inputProps[node].concat([input.value]),
+              : (inputProps[node] || []).concat([input.value]),
         });
         setTagExised(false);
         input.value = "";
