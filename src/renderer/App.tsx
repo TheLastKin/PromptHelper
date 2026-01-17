@@ -164,14 +164,15 @@ const App = () => {
   const saveRefImage = async (
     path: string,
     name: string,
-    arrayBuffer: ArrayBuffer
+    arrayBuffer: ArrayBuffer,
+    refID: number
   ) => {
     if (/^(https:|blob:)/.test(path)) {
       let filePath = "";
       if (path.includes("https")) {
-        filePath = await window.api.saveFromHTTPS(path);
+        filePath = await window.api.saveFromHTTPS(path, refID);
       } else {
-        filePath = await window.api.saveFromBuffer(arrayBuffer, name);
+        filePath = await window.api.saveFromBuffer(arrayBuffer, name, refID);
       }
       return filePath;
     }
@@ -186,13 +187,15 @@ const App = () => {
     }
   ) => {
     try {
+      const newRefID = ref.id < 0 ? Date.now() : ref.id;
       const newRef = {
-        id: ref.id < 0 ? Date.now() : ref.id,
+        id: newRefID,
         mainTag: ref.mainTag,
         refImage: await saveRefImage(
           ref.refImage,
           ref.refImageName,
-          ref.refImageArrayBuffer
+          ref.refImageArrayBuffer,
+          newRefID
         ),
         secondaryTags: ref.secondaryTags,
         description: ref.description,

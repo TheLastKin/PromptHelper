@@ -4,8 +4,8 @@ declare global {
             onURLReceived: (callback: any) => void,
             startChecking: () => void,
             stopChecking: () => void,
-            saveFromHTTPS: (url: string) => Promise<string>,
-            saveFromBuffer: (buffer: ArrayBuffer, fileName: string) => Promise<string>,
+            saveFromHTTPS: (url: string, refID: number) => Promise<string>,
+            saveFromBuffer: (buffer: ArrayBuffer, fileName: string, refID: number) => Promise<string>,
             removeFile: (path: string) => void,
             toggleWindowMode: () => void
         }

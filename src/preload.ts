@@ -6,8 +6,8 @@ contextBridge.exposeInMainWorld('api', {
     onURLReceived: (callback: (e: Electron.IpcRendererEvent, url: string) => void) => ipcRenderer.on("onURLReceived", callback),
     startChecking: () => ipcRenderer.send("startChecking"),
     stopChecking: () => ipcRenderer.send("stopChecking"),
-    saveFromHTTPS: (url: string) => ipcRenderer.invoke("saveFromHTTPS", url),
-    saveFromBuffer: (buffer: Buffer, fileName: string) => ipcRenderer.invoke("saveFromBuffer", buffer, fileName),
+    saveFromHTTPS: (url: string, refID: number) => ipcRenderer.invoke("saveFromHTTPS", url, refID),
+    saveFromBuffer: (buffer: Buffer, fileName: string, refID: number) => ipcRenderer.invoke("saveFromBuffer", buffer, fileName, refID),
     removeFile: (path: string) => ipcRenderer.send("removeRefImage", path),
     toggleWindowMode: () => ipcRenderer.send("toggleWindowMode")
 });

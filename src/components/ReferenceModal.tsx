@@ -41,13 +41,18 @@ const ReferenceModal = ({
 
   useEffect(() => {
     if (createState !== "") {
-      if(createState === "success") setInputProps({ id: -1, mainTag: "", refImage: inputProps.refImage })
+      if (createState === "success")
+        setInputProps({ id: -1, mainTag: "", refImage: inputProps.refImage });
       setTimeout(() => setCreateState(""), 1500);
     }
   }, [createState]);
 
   useEffect(() => {
-    if (reference) setInputProps({ ...reference, refImage: reference.refImage ? `file://${reference.refImage}` : "" });
+    if (reference)
+      setInputProps({
+        ...reference,
+        refImage: reference.refImage ? `file://${reference.refImage}` : "",
+      });
   }, [reference]);
 
   useEffect(() => {
@@ -102,14 +107,22 @@ const ReferenceModal = ({
       ) {
         setTagExised(true);
       } else {
-        setInputProps({
-          ...inputProps,
-          [node]:
-            node === "mainTag"
-              ? input.value
-              : (inputProps[node] || []).concat([input.value]),
-        });
-        setTagExised(false);
+        if (input.value.includes(",") && node === "secondaryTags") {
+          const tags = input.value.split(",");
+          setInputProps({
+            ...inputProps,
+            secondaryTags: (inputProps.secondaryTags || []).concat(tags),
+          });
+        } else {
+          setInputProps({
+            ...inputProps,
+            [node]:
+              node === "mainTag"
+                ? input.value
+                : (inputProps[node] || []).concat([input.value]),
+          });
+          setTagExised(false);
+        }
         input.value = "";
       }
     } else if (e.key === "Alt") {
@@ -129,19 +142,27 @@ const ReferenceModal = ({
     setInputProps({ ...inputProps, description: e.target.value });
   };
 
-  const deletemMainTag = () => setInputProps({...inputProps, mainTag: ""})
+  const deletemMainTag = () => setInputProps({ ...inputProps, mainTag: "" });
 
-  const deleteSecondaryTag = (tag: string) => setInputProps({...inputProps, secondaryTags: inputProps.secondaryTags.filter(t => t !== tag)})
+  const deleteSecondaryTag = (tag: string) =>
+    setInputProps({
+      ...inputProps,
+      secondaryTags: inputProps.secondaryTags.filter((t) => t !== tag),
+    });
 
-  const title = useMemo(() => inputProps.id > 0 ? `Viewing a Reference of ${parentCategories[parentCategories.length - 1]}`: `Add a Reference to ${parentCategories[parentCategories.length - 1]}`, [inputProps])
+  const title = useMemo(
+    () =>
+      inputProps.id > 0
+        ? `Viewing a Reference of ${parentCategories[parentCategories.length - 1]}`
+        : `Add a Reference to ${parentCategories[parentCategories.length - 1]}`,
+    [inputProps]
+  );
 
   return (
     <div className={modalClass}>
       <div className="backdrop" onClick={onClose}></div>
       <div className="modal-content">
-        <h4>
-          {title}
-        </h4>
+        <h4>{title}</h4>
         <div className="form-input">
           <div className="form-left">
             <div className="image-container">
@@ -179,7 +200,11 @@ const ReferenceModal = ({
                 {inputMode === "main"
                   ? "Enter Main Tag"
                   : "Enter Secondary Tag"}
-                : <Tooltip description={DESCRIPTION.TAG_INPUT} />
+                : {inputMode === "main" ? (
+                  <Tooltip description={DESCRIPTION.TAG_INPUT_MAIN} />
+                ) : (
+                  <Tooltip description={DESCRIPTION.TAG_INPUT_SECONDARY} />
+                )}
               </label>
               {isTagExisted && <div className="tag-exist">Tag existed!</div>}
               <input
@@ -194,14 +219,23 @@ const ReferenceModal = ({
               <div className="main-tag-group">
                 <span>Main Tag: </span>
                 {inputProps.mainTag.length > 0 && (
-                  <Tag title={inputProps.mainTag} className="main-tag" onDeleteTag={deletemMainTag}/>
+                  <Tag
+                    title={inputProps.mainTag}
+                    className="main-tag"
+                    onDeleteTag={deletemMainTag}
+                  />
                 )}
               </div>
               <div>Secondary Tags: </div>
               <div className="secondary-tags-group">
                 <div>
                   {inputProps.secondaryTags?.map((tag) => (
-                    <Tag key={tag} title={tag} className="secondary-tag" onDeleteTag={deleteSecondaryTag}/>
+                    <Tag
+                      key={tag}
+                      title={tag}
+                      className="secondary-tag"
+                      onDeleteTag={deleteSecondaryTag}
+                    />
                   ))}
                 </div>
               </div>
@@ -211,6 +245,7 @@ const ReferenceModal = ({
               <textarea
                 name=""
                 id=""
+                value={inputProps.description || ""}
                 className="note-input"
                 onChange={onNoteInput}
               />

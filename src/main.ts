@@ -67,15 +67,23 @@ function getImageNameFromUrl(url: string) {
   return path.basename(pathname);
 }
 
-const saveFromHttps = (e: any, url: string) => {
+const checkForExistingFile = (filePath: string) => {
+  if(fs.existsSync(filePath)){
+    fs.unlinkSync(filePath);
+  }
+};
+
+const saveFromHttps = (e: any, url: string, refID: number) => {
   return new Promise((resolve, reject) => {
+    const fileName = refID + path.extname(getImageNameFromUrl(url));
+    checkForExistingFile(path.join(assetsDir, fileName));
     https
       .get(url, (res) => {
         if (res.statusCode !== 200) {
           reject(new Error(`HTTP ${res.statusCode}`));
           return;
         }
-        const filePath = path.join(assetsDir, getImageNameFromUrl(url));
+        const filePath = path.join(assetsDir, fileName);
         const file = fs.createWriteStream(filePath);
         res.pipe(file);
 
@@ -87,10 +95,13 @@ const saveFromHttps = (e: any, url: string) => {
   });
 };
 
-const saveFromBuffer = (e: any, data: ArrayBuffer, fileName: string) => {
+const saveFromBuffer = (e: any, data: ArrayBuffer, fileName: string, refID: number) => {
   return new Promise((resolve, reject) => {
     try {
-      const filePath = path.join(assetsDir, fileName);
+      const newFileName = refID + fileName.substring(fileName.lastIndexOf("."));
+      console.log(newFileName);
+      const filePath = path.join(assetsDir, newFileName);
+      checkForExistingFile(filePath);
       fs.writeFile(filePath, Buffer.from(data), () => resolve(filePath));
     } catch (error) {
       reject(error);
