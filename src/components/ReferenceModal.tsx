@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FaRegQuestionCircle } from "react-icons/fa";
-import { Category, Reference } from "../util/types";
+import { Reference } from "../util/types";
 import Tooltip from "./Tooltip";
 import DESCRIPTION from "../util/constants";
 import ButtonAction from "./ButtonAction";
-import { IoIosCloseCircle } from "react-icons/io";
 import Tag from "./Tag";
+import { RiResetRightFill } from "react-icons/ri";
 
 type ReferenceProps = {
   reference?: Reference;
@@ -158,6 +157,16 @@ const ReferenceModal = ({
     [inputProps]
   );
 
+  const resetInputProps = () => {
+    setInputProps({
+      id: inputProps.id > 0 ? inputProps.id : -1,
+      mainTag: "",
+      secondaryTags: [],
+      description: "",
+      refImage: "",
+    });
+  }
+
   return (
     <div className={modalClass}>
       <div className="backdrop" onClick={onClose}></div>
@@ -263,6 +272,7 @@ const ReferenceModal = ({
           actionState={createState}
           onClick={handleSavingReference}
         />
+        <ButtonAction className="reset-input" label={<RiResetRightFill />} onClick={resetInputProps} shouldChangeText={false}/>
       </div>
     </div>
   );

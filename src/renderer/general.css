@@ -927,3 +927,51 @@ html {
   border-color: yellowgreen;
   background-color: rgba(153, 205, 50, 0.15);
 }
+.reset-input {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  padding: 6px;
+  top: 15px;
+  right: 15px;
+  cursor: pointer;
+}
+.safe-guard-modal{
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.safe-guard-modal .action-buttons{
+  position: relative;
+  display: flex;
+  justify-content: space-evenly;
+}
+.confirm-button {
+  width: 80px;
+  height: 20px;
+  border: 1.5px solid rgb(90, 137, 247);
+  background-color: #8ac4ff2e;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.confirm-button > .button-text {
+  color: rgb(142, 176, 255) !important;
+}
+.cancel-button {
+  width: 80px;
+  height: 20px;
+  border: 1.5px solid rgb(255, 185, 185);
+  background-color: #ffdcdc2e;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.cancel-button > .button-text {
+  color: rgb(255, 213, 208) !important;
+}

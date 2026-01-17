@@ -10,6 +10,7 @@ import MoveToBottom from "../components/MoveToBottom";
 import PickedRefs from "../components/PickedRefs";
 import ReferenceViewerModal from "../components/ReferenceViewerModal";
 import { BsFillPinAngleFill } from "react-icons/bs";
+import DeleteSafeGuard from "../components/DeleteSafeGuard";
 
 const defaultSet: Category = {
   name: "Root Category",
@@ -69,7 +70,20 @@ const App = () => {
     selectedRefs: [],
   });
   const [animateItems, setAnimateItems] = useState<AnimateItem[]>([]);
-  const [isWindowAlwaysOnTop, setAlwaysOnTop] = useState(false)
+  const [isWindowAlwaysOnTop, setAlwaysOnTop] = useState(false);
+  const [deleteSafeGuard, setDeleteSafeGuard] = useState<{
+    show: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+  }>({
+    show: false,
+    onConfirm: () => {
+      /* what */
+    },
+    onCancel: () => {
+      /* what */
+    },
+  });
 
   const modalRef = useRef(showReferenceModal);
   modalRef.current = showReferenceModal;
@@ -138,7 +152,7 @@ const App = () => {
     for (const c of parentCategories) {
       if (c === defaultSet.name) continue;
       targetCategory = targetCategory.subCategories.find(
-        (category) => category.name === c
+        (category) => category.name === c,
       );
     }
     if (Array.isArray(targetCategory.subCategories)) {
@@ -165,7 +179,7 @@ const App = () => {
     path: string,
     name: string,
     arrayBuffer: ArrayBuffer,
-    refID: number
+    refID: number,
   ) => {
     if (/^(https:|blob:)/.test(path)) {
       let filePath = "";
@@ -184,7 +198,7 @@ const App = () => {
       hierarchy: string[];
       refImageName: string;
       refImageArrayBuffer: ArrayBuffer;
-    }
+    },
   ) => {
     try {
       const newRefID = ref.id < 0 ? Date.now() : ref.id;
@@ -195,7 +209,7 @@ const App = () => {
           ref.refImage,
           ref.refImageName,
           ref.refImageArrayBuffer,
-          newRefID
+          newRefID,
         ),
         secondaryTags: ref.secondaryTags,
         description: ref.description,
@@ -205,12 +219,12 @@ const App = () => {
       for (const c of ref.hierarchy) {
         if (c === defaultSet.name) continue;
         targetCategory = targetCategory.subCategories.find(
-          (c2) => c2.name === c
+          (c2) => c2.name === c,
         );
       }
       if (targetCategory.references.find((r) => r.id === newRef.id)) {
         targetCategory.references = targetCategory.references.map((r) =>
-          r.id === newRef.id ? newRef : r
+          r.id === newRef.id ? newRef : r,
         );
       } else {
         targetCategory.references.push(newRef);
@@ -225,7 +239,7 @@ const App = () => {
   const deleteReference = (
     refId: number,
     refImagePath: string,
-    hierarchy: string[]
+    hierarchy: string[],
   ) => {
     window.api.removeFile(refImagePath);
     const newCategories = categories;
@@ -235,7 +249,7 @@ const App = () => {
       targetCategory = targetCategory.subCategories.find((c2) => c2.name === c);
     }
     targetCategory.references = targetCategory.references.filter(
-      (r) => r.id !== refId
+      (r) => r.id !== refId,
     );
     saveCategories(newCategories);
   };
@@ -259,11 +273,34 @@ const App = () => {
         window.api.removeFile(r.refImage);
       }
     };
-    recursiveDelete(targetCategory);
-    parentCategory.subCategories = parentCategory.subCategories.filter(
-      (c) => c.name !== targetCategory.name
-    );
-    saveCategories(newCategories);
+    const handleDelete = () => {
+      recursiveDelete(targetCategory);
+      parentCategory.subCategories = parentCategory.subCategories.filter(
+        (c) => c.name !== targetCategory.name,
+      );
+      saveCategories(newCategories);
+    };
+    if(targetCategory.references.length >= 3 || (targetCategory.subCategories && targetCategory.subCategories.length >= 3)) {
+      setDeleteSafeGuard({
+        show: true,
+        onConfirm: () => {
+          handleDelete();
+          setDeleteSafeGuard({
+            show: false,
+            onConfirm: null,
+            onCancel: null,
+          });
+        },
+        onCancel: () =>
+          setDeleteSafeGuard({
+            show: false,
+            onConfirm: null,
+            onCancel: null,
+          }),
+      });
+    } else {
+      handleDelete();
+    }
   };
 
   const onViewReference = (ref: Reference, parentCategories: string[]) => {
@@ -286,7 +323,7 @@ const App = () => {
       setViewerModal({
         show: false,
         selectedRefs: viewrModal.selectedRefs.map((r) =>
-          r.id === ref.id ? ref : r
+          r.id === ref.id ? ref : r,
         ),
       });
     }
@@ -314,7 +351,7 @@ const App = () => {
             pickedRefs.length >= 5 ? Math.random() > 0.4 : true;
           if (shouldPick && c.references.length > 0) {
             pickedRefs.push(
-              c.references[Math.floor(Math.random() * c.references.length)]
+              c.references[Math.floor(Math.random() * c.references.length)],
             );
           }
           loop(c);
@@ -345,8 +382,8 @@ const App = () => {
 
   const toggleWindowMode = () => {
     window.api.toggleWindowMode();
-    setAlwaysOnTop(!isWindowAlwaysOnTop)
-  }
+    setAlwaysOnTop(!isWindowAlwaysOnTop);
+  };
 
   return (
     <div className="container">
@@ -408,10 +445,18 @@ const App = () => {
         onClose={closeViewrModal}
         onRemoveRef={removeSelectedRef}
       />
+      <DeleteSafeGuard
+        show={deleteSafeGuard.show}
+        onConfirm={deleteSafeGuard.onConfirm}
+        onCancel={deleteSafeGuard.onCancel}
+      />
       <div id="preview">
         <img src="" alt="" />
       </div>
-      <BsFillPinAngleFill className={"pin-window " + (isWindowAlwaysOnTop ? "is-on-top" : "")} onClick={toggleWindowMode}/>
+      <BsFillPinAngleFill
+        className={"pin-window " + (isWindowAlwaysOnTop ? "is-on-top" : "")}
+        onClick={toggleWindowMode}
+      />
     </div>
   );
 };
