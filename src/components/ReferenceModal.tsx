@@ -70,7 +70,7 @@ const ReferenceModal = ({
 
         if (file.type.startsWith("image/")) {
           setInputProps({
-            ...inputProps,
+            ...inputPropsRef.current,
             refImage: URL.createObjectURL(file),
             refImageName: file.name,
             refImageArrayBuffer: await file.arrayBuffer(),
