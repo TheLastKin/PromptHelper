@@ -18,7 +18,7 @@ const ButtonAction = ({
   const divRef = useRef(null);
   const text = useMemo(
     () => (actionState.length > 0 && shouldChangeText ? actionState : label),
-    [actionState]
+    [actionState, label]
   );
 
   useEffect(() => {

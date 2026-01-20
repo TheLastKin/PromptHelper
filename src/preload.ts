@@ -9,5 +9,8 @@ contextBridge.exposeInMainWorld('api', {
     saveFromHTTPS: (url: string, refID: number) => ipcRenderer.invoke("saveFromHTTPS", url, refID),
     saveFromBuffer: (buffer: Buffer, fileName: string, refID: number) => ipcRenderer.invoke("saveFromBuffer", buffer, fileName, refID),
     removeFile: (path: string) => ipcRenderer.send("removeRefImage", path),
-    toggleWindowMode: () => ipcRenderer.send("toggleWindowMode")
+    toggleWindowMode: () => ipcRenderer.send("toggleWindowMode"),
+    startDownload: (downloadURL: string) => ipcRenderer.invoke("startDownload", downloadURL),
+    downloadProgress: (callback: (e: Electron.IpcRendererEvent, progress: number) => void) => ipcRenderer.on("downloadProgress", callback),
+    selectDownloadFolder: () => ipcRenderer.invoke("selectDownloadFolder"),
 });

@@ -11,6 +11,8 @@ import PickedRefs from "../components/PickedRefs";
 import ReferenceViewerModal from "../components/ReferenceViewerModal";
 import { BsFillPinAngleFill } from "react-icons/bs";
 import DeleteSafeGuard from "../components/DeleteSafeGuard";
+import DownloadModal from "../components/DownloadModal";
+import { FaDownload } from "react-icons/fa";
 
 const defaultSet: Category = {
   name: "Root Category",
@@ -83,6 +85,14 @@ const App = () => {
     onCancel: () => {
       /* what */
     },
+  });
+  const [excludedCategories, setExcludedCategories] = useState<{ name: string; mode: 1 | 2 }[]>([]);
+  const [downloadModal, setDownloadModal] = useState<{
+    show: boolean;
+    downloadURLs: string[];
+  }>({
+    show: false,
+    downloadURLs: [],
   });
 
   const modalRef = useRef(showReferenceModal);
@@ -343,22 +353,33 @@ const App = () => {
     });
 
   const randomPicks = () => {
-    const pickedRefs: Reference[] = [];
-    const loop = (categories: Category) => {
+    const queryGroups: { [node: string]: Reference[] } = {};
+    const loop = (categories: Category, nodeName: string) => {
       if (Array.isArray(categories.subCategories)) {
         for (const c of categories.subCategories) {
-          const shouldPick =
-            pickedRefs.length >= 5 ? Math.random() > 0.4 : true;
-          if (shouldPick && c.references.length > 0) {
-            pickedRefs.push(
-              c.references[Math.floor(Math.random() * c.references.length)],
-            );
+          const pickMode = excludedCategories.find(e => e.name === c.name);
+          if(pickMode?.mode === 2) {
+            continue;
           }
-          loop(c);
+          if(nodeName || pickMode?.mode === 1) {
+            const node = nodeName || pickMode.name;
+            queryGroups[node] = (queryGroups[node] || []).concat(c.references);
+            loop(c, node)
+          }else{
+            queryGroups[c.name] = c.references;
+            loop(c, "")
+          }
         }
       }
     };
-    loop(categories);
+    loop(categories, "");
+    const pickedRefs: Reference[] = [];
+    for(const key of Object.keys(queryGroups)){
+      const shouldPick = pickedRefs.length >= 3 ? Math.random() > 0.4 : true;
+      if(shouldPick && queryGroups[key].length > 0){
+        pickedRefs.push(queryGroups[key][Math.floor(Math.random() * queryGroups[key].length)])
+      }
+    }
     getAnimateProps(pickedRefs);
     setViewerModal({ show: false, selectedRefs: pickedRefs });
   };
@@ -385,6 +406,43 @@ const App = () => {
     setAlwaysOnTop(!isWindowAlwaysOnTop);
   };
 
+  const excludeCategory = (categoryName: string) => {
+    const exist = excludedCategories.find(e => e.name === categoryName);
+    if (exist) {
+      if(exist.mode === 1) {
+        setExcludedCategories(excludedCategories.map(e => e.name === categoryName ? { name: categoryName, mode: 2 } : e));
+      } else {
+        setExcludedCategories(excludedCategories.filter(e => e.name !== categoryName));
+      }
+    } else {
+      setExcludedCategories([...excludedCategories, { name: categoryName, mode: 1 }]);
+    }
+  }
+
+  const closeDownloadModal = () => {
+    setDownloadModal({ show: false, downloadURLs: [] });
+  }
+
+  const openDownloadModal = () => {
+    const downloadURLs: string[] = [];
+    const loop = (category: Category) => {
+      for (const ref of category.references) {
+        const urls = ref.description?.split("\n") || [];
+        const validURL = urls.find(url => /^https:\/\/civitai\.com\/api\/download.*/.test(url));
+        if (validURL) {
+          downloadURLs.push(validURL);
+        }
+      }
+      if (Array.isArray(category.subCategories)) {
+        for (const sub of category.subCategories) {
+          loop(sub);
+        }
+      }
+    };
+    loop(categories);
+    setDownloadModal({ show: true, downloadURLs });
+  }
+
   return (
     <div className="container">
       <div className="drag-region"></div>
@@ -393,6 +451,7 @@ const App = () => {
           key={categories.name}
           item={categories}
           parentCategories={[defaultSet.name]}
+          excludeCategory={excludeCategory}
           onAddSubcategory={showAddCategoryModalHandler}
           onAddReference={showReferenceModalHandler}
           onDeleteReference={deleteReference}
@@ -450,6 +509,7 @@ const App = () => {
         onConfirm={deleteSafeGuard.onConfirm}
         onCancel={deleteSafeGuard.onCancel}
       />
+      {/* <DownloadModal show={downloadModal.show} downloadURLs={downloadModal.downloadURLs} onClose={closeDownloadModal} /> */}
       <div id="preview">
         <img src="" alt="" />
       </div>
@@ -457,6 +517,7 @@ const App = () => {
         className={"pin-window " + (isWindowAlwaysOnTop ? "is-on-top" : "")}
         onClick={toggleWindowMode}
       />
+      {/* <FaDownload className="civitai-download" onClick={openDownloadModal} /> */}
     </div>
   );
 };

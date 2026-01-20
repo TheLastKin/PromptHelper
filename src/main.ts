@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, ipcMain } from "electron";
+import { app, BrowserWindow, clipboard, ipcMain, dialog } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import fs from "fs";
@@ -11,6 +11,7 @@ if (started) {
 
 const assetsDir = path.join(app.getPath("userData"), "assets");
 const statePath = path.join(app.getPath("userData"), "window_state.json");
+let downloadFolder = app.getPath("downloads");
 
 if (!fs.existsSync(assetsDir)) {
   fs.mkdirSync(assetsDir, { recursive: true });
@@ -68,14 +69,14 @@ function getImageNameFromUrl(url: string) {
 }
 
 const checkForExistingFile = (filePath: string) => {
-  if(fs.existsSync(filePath)){
+  if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }
 };
 
 const saveFromHttps = (e: any, url: string, refID: number) => {
   return new Promise((resolve, reject) => {
-    const fileName = refID + path.extname(getImageNameFromUrl(url));
+    const fileName = (refID || "") + path.extname(getImageNameFromUrl(url));
     checkForExistingFile(path.join(assetsDir, fileName));
     https
       .get(url, (res) => {
@@ -95,11 +96,15 @@ const saveFromHttps = (e: any, url: string, refID: number) => {
   });
 };
 
-const saveFromBuffer = (e: any, data: ArrayBuffer, fileName: string, refID: number) => {
+const saveFromBuffer = (
+  e: any,
+  data: ArrayBuffer,
+  fileName: string,
+  refID: number,
+) => {
   return new Promise((resolve, reject) => {
     try {
       const newFileName = refID + fileName.substring(fileName.lastIndexOf("."));
-      console.log(newFileName);
       const filePath = path.join(assetsDir, newFileName);
       checkForExistingFile(filePath);
       fs.writeFile(filePath, Buffer.from(data), () => resolve(filePath));
@@ -118,6 +123,49 @@ const removeFile = (e: any, path: string) => {
     //what?
     console.error(error);
   }
+};
+
+const selectDownloadFolder = async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openDirectory"],
+  });
+  if (result.canceled || result.filePaths.length === 0) {
+    return "";
+  }
+  downloadFolder = result.filePaths[0];
+  return result.filePaths[0];
+};
+
+const startDownload = async (e: any, downloadURL: string) => {
+  return new Promise<string>((resolve, reject) => {
+    try {
+        https.get(downloadURL, (res) => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`HTTP ${res.statusCode}`));
+            return;
+          }
+          const disposition = res.headers['content-disposition'];
+          const match = disposition ? disposition.match(/filename="?([^"]+)"?/) : null;
+          const fileName = match?.[1];
+          const filePath = path.join(downloadFolder, fileName);
+          const file = fs.createWriteStream(filePath);
+          let receivedBytes = 0;
+          const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
+          res.pipe(file);
+          res.on("data", (chunk) => {
+            receivedBytes += chunk.length;
+            mainWindow.webContents.send("downloadProgress", receivedBytes / totalBytes);
+          });
+          file.on("finish", () => {
+            file.close(() => {
+              resolve("success");
+            });
+          });
+        });
+    } catch (error) {
+      reject("fail");
+    }
+  });
 };
 
 const createWindow = () => {
@@ -141,12 +189,12 @@ const createWindow = () => {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
   }
 
   // Open the DevTools.
-  if(!app.isPackaged){
+  if (!app.isPackaged) {
     mainWindow.webContents.openDevTools();
   }
 };
@@ -176,14 +224,14 @@ app.on("activate", () => {
 let isWindowAlwaysOnTop = false;
 
 const toggleWindowMode = () => {
-  if(isWindowAlwaysOnTop){
-    isWindowAlwaysOnTop = false
-    mainWindow.setAlwaysOnTop(false)
-  }else{
-    isWindowAlwaysOnTop = true
-    mainWindow.setAlwaysOnTop(true)
+  if (isWindowAlwaysOnTop) {
+    isWindowAlwaysOnTop = false;
+    mainWindow.setAlwaysOnTop(false);
+  } else {
+    isWindowAlwaysOnTop = true;
+    mainWindow.setAlwaysOnTop(true);
   }
-}
+};
 
 app.whenReady().then(() => {
   ipcMain.on("startChecking", startChecking);
@@ -191,7 +239,9 @@ app.whenReady().then(() => {
   ipcMain.on("removeRefImage", removeFile);
   ipcMain.handle("saveFromHTTPS", saveFromHttps);
   ipcMain.handle("saveFromBuffer", saveFromBuffer);
-  ipcMain.on("toggleWindowMode", toggleWindowMode)
+  ipcMain.handle("startDownload", startDownload);
+  ipcMain.on("toggleWindowMode", toggleWindowMode);
+  ipcMain.handle("selectDownloadFolder", selectDownloadFolder);
   let resizeTimeout: any;
   mainWindow.on("resize", () => {
     try {
