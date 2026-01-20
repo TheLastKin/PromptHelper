@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AnimateItem, Category, Reference } from "../util/types";
 import ImageView from "./ImageView";
 import { BsArrowsCollapse } from "react-icons/bs";
@@ -38,9 +38,16 @@ const CategoryItem = ({
   const [collapseAll, setCollapseAll] = useState(collapseAllNodes);
   const [queryMode, setQueryMode] = useState(0);
 
+  useEffect(() => {
+    setShowContent(!collapseAllNodes);
+  }, [collapseAllNodes]);
+
   const isRootCategory = parentCategories.length === 1;
 
-  const containerClass = useMemo(() => isRootCategory ? "root-category" : "category", [showContent]);
+  const containerClass = useMemo(
+    () => (isRootCategory ? "root-category" : "category"),
+    [showContent],
+  );
 
   const onTitleHover = () => setShowActions(true);
   const onTitleLeave = () => setShowActions(false);
@@ -64,13 +71,13 @@ const CategoryItem = ({
       );
     };
 
-    const handleCollapseAll = () => setCollapseAll(!collapseAll);
+  const handleCollapseAll = () => setCollapseAll(!collapseAll);
 
-    const handleExcludeCategory = (e: React.MouseEvent) => {
-      setQueryMode((queryMode + 1) % 3);
-      excludeCategory(item.name);
-      e.preventDefault();
-    }
+  const handleExcludeCategory = (e: React.MouseEvent) => {
+    setQueryMode((queryMode + 1) % 3);
+    excludeCategory(item.name);
+    e.preventDefault();
+  };
 
   return (
     <div className={containerClass}>
@@ -79,7 +86,15 @@ const CategoryItem = ({
         onMouseEnter={onTitleHover}
         onMouseLeave={onTitleLeave}
       >
-        <span className="title" onClick={toggleContent} onContextMenu={handleExcludeCategory} style={{ color: queryMode === 0 ? "inherit" : (queryMode === 1 ? "yellow" : "red") }}>
+        <span
+          className="title"
+          onClick={toggleContent}
+          onContextMenu={handleExcludeCategory}
+          style={{
+            color:
+              queryMode === 0 ? "inherit" : queryMode === 1 ? "yellow" : "red",
+          }}
+        >
           {item.name}
         </span>
         <span className="total-refs">
@@ -110,13 +125,22 @@ const CategoryItem = ({
                 Delete
               </button>
             )}
-            {item.subCategories?.length > 0 && <ButtonAction className="collapse-all" label={<BsArrowsCollapse/>} onClick={handleCollapseAll}/>}
+            {item.subCategories?.length > 0 && (
+              <ButtonAction
+                className="collapse-all"
+                label={<BsArrowsCollapse />}
+                onClick={handleCollapseAll}
+              />
+            )}
           </div>
         ) : (
           isRootCategory && <span className="hover-text">Hover here</span>
         )}
       </div>
-      <div className={"category-content"} style={{ display: !collapseAllNodes && showContent ? "block" : "none" }}>
+      <div
+        className={"category-content"}
+        style={{ display: showContent ? "block" : "none" }}
+      >
         {Array.isArray(item.subCategories) &&
           item.subCategories.map((category: Category) => (
             <CategoryItem
