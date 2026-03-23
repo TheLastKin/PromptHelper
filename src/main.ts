@@ -3,6 +3,8 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 import fs from "fs";
 import https from "https";
+import axios from "axios";
+import { error } from "node:console";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -78,21 +80,15 @@ const saveFromHttps = (e: any, url: string, refID: number) => {
   return new Promise((resolve, reject) => {
     const fileName = (refID || "") + path.extname(getImageNameFromUrl(url));
     checkForExistingFile(path.join(assetsDir, fileName));
-    https
-      .get(url, (res) => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`HTTP ${res.statusCode}`));
-          return;
-        }
-        const filePath = path.join(assetsDir, fileName);
-        const file = fs.createWriteStream(filePath);
-        res.pipe(file);
+    axios.get(url, { responseType: "stream" }).then((response) => {
+      const filePath = path.join(assetsDir, fileName);
+      const file = fs.createWriteStream(filePath);
+      response.data.pipe(file);
 
-        file.on("finish", () => {
-          file.close(() => resolve(file.path));
-        });
-      })
-      .on("error", reject);
+      file.on("finish", () => {
+        file.close(() => resolve(file.path));
+      });
+    }).catch(reject);
   });
 };
 

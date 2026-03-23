@@ -11,8 +11,7 @@ import PickedRefs from "../components/PickedRefs";
 import ReferenceViewerModal from "../components/ReferenceViewerModal";
 import { BsFillPinAngleFill } from "react-icons/bs";
 import DeleteSafeGuard from "../components/DeleteSafeGuard";
-import DownloadModal from "../components/DownloadModal";
-import { FaDownload } from "react-icons/fa";
+import { TbGridDots } from "react-icons/tb";
 
 const defaultSet: Category = {
   name: "Root Category",
@@ -47,13 +46,16 @@ const defaultSet: Category = {
   ],
 };
 
+let findIndex = -1;
+
 let timerId: NodeJS.Timeout;
 
 const App = () => {
   const [categories, setCategories] = useState<Category>(defaultSet);
-  const [modes, setModes] = useState<any>({
-    collect: false,
-    create: false,
+  const [userConfigs, setUserConfigs] = useState({
+    isCollecting: false,
+    isWindowAlwaysOnTop: false,
+    gridType: 0,
   });
   const [showAddCategoryModal, setShowAddCategoryModal] = useState<{
     parentCategories: string[];
@@ -72,7 +74,6 @@ const App = () => {
     selectedRefs: [],
   });
   const [animateItems, setAnimateItems] = useState<AnimateItem[]>([]);
-  const [isWindowAlwaysOnTop, setAlwaysOnTop] = useState(false);
   const [deleteSafeGuard, setDeleteSafeGuard] = useState<{
     show: boolean;
     onConfirm: () => void;
@@ -86,19 +87,24 @@ const App = () => {
       /* what */
     },
   });
-  const [excludedCategories, setExcludedCategories] = useState<{ name: string; mode: 1 | 2 }[]>([]);
-  const [downloadModal, setDownloadModal] = useState<{
-    show: boolean;
-    downloadURLs: string[];
-  }>({
-    show: false,
-    downloadURLs: [],
-  });
+  const [excludedCategories, setExcludedCategories] = useState<
+    { name: string; mode: 1 | 2 }[]
+  >([]);
+  const [findLabel, setFindLabel] = useState<string>("");
+  const [findCounter, setFindCounter] = useState<number>(0);
 
   const modalRef = useRef(showReferenceModal);
-  modalRef.current = showReferenceModal;
+  const shouldFindLabel = useRef(false);
+  const allMarkedTexts = useRef<NodeListOf<Element>>(null);
 
+  modalRef.current = showReferenceModal;
+  shouldFindLabel.current =
+    !showAddCategoryModal.show && !showReferenceModal.show;
   useEffect(() => {
+    const savedConfigs = localStorage.getItem("userConfigs");
+    if (savedConfigs) {
+      setUserConfigs(JSON.parse(savedConfigs));
+    }
     const savedCategories = localStorage.getItem("categories");
     if (savedCategories) {
       setCategories(JSON.parse(savedCategories));
@@ -111,7 +117,37 @@ const App = () => {
         show: true,
       });
     });
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        if (allMarkedTexts.current.length > 0) {
+          findIndex = (findIndex + 1) % allMarkedTexts.current.length;
+          const current = allMarkedTexts.current[findIndex] as HTMLElement;
+          current.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return;
+      }
+      if (!shouldFindLabel.current) return;
+      setFindLabel((prev) => {
+        if (e.key === "Escape") return "";
+
+        if (e.key === "Backspace") return prev.slice(0, -1);
+
+        if (e.key.length === 1) return prev + e.key;
+
+        return prev;
+      });
+    });
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("userConfigs", JSON.stringify(userConfigs));
+  }, [userConfigs])
+
+  useEffect(() => {
+    allMarkedTexts.current = document.querySelectorAll("mark");
+    setFindCounter(findLabel.length === 0 ? 0 : allMarkedTexts.current.length);
+  }, [findLabel]);
 
   const clearAnimateItem = () => {
     try {
@@ -123,16 +159,13 @@ const App = () => {
   };
 
   const startCheckingClipboard = () => {
-    if (modes.collect) {
+    if (userConfigs.isCollecting) {
       window.api.stopChecking();
     } else {
       window.api.startChecking();
     }
-    toggleMode("collect")();
+    setUserConfigs({ ...userConfigs, isCollecting: !userConfigs.isCollecting });
   };
-
-  const toggleMode = (mode: string) => () =>
-    setModes({ ...modes, [mode]: !modes[mode] });
 
   const showReferenceModalHandler = (parentCategories: string[]) =>
     setShowReferenceModal({
@@ -290,7 +323,10 @@ const App = () => {
       );
       saveCategories(newCategories);
     };
-    if(targetCategory.references.length >= 3 || (targetCategory.subCategories && targetCategory.subCategories.length >= 3)) {
+    if (
+      targetCategory.references.length >= 3 ||
+      (targetCategory.subCategories && targetCategory.subCategories.length >= 3)
+    ) {
       setDeleteSafeGuard({
         show: true,
         onConfirm: () => {
@@ -357,27 +393,29 @@ const App = () => {
     const loop = (categories: Category, nodeName: string) => {
       if (Array.isArray(categories.subCategories)) {
         for (const c of categories.subCategories) {
-          const pickMode = excludedCategories.find(e => e.name === c.name);
-          if(pickMode?.mode === 2) {
+          const pickMode = excludedCategories.find((e) => e.name === c.name);
+          if (pickMode?.mode === 2) {
             continue;
           }
-          if(nodeName || pickMode?.mode === 1) {
+          if (nodeName || pickMode?.mode === 1) {
             const node = nodeName || pickMode.name;
             queryGroups[node] = (queryGroups[node] || []).concat(c.references);
-            loop(c, node)
-          }else{
+            loop(c, node);
+          } else {
             queryGroups[c.name] = c.references;
-            loop(c, "")
+            loop(c, "");
           }
         }
       }
     };
     loop(categories, "");
     const pickedRefs: Reference[] = [];
-    for(const key of Object.keys(queryGroups)){
+    for (const key of Object.keys(queryGroups)) {
       const shouldPick = pickedRefs.length >= 3 ? Math.random() > 0.4 : true;
-      if(shouldPick && queryGroups[key].length > 0){
-        pickedRefs.push(queryGroups[key][Math.floor(Math.random() * queryGroups[key].length)])
+      if (shouldPick && queryGroups[key].length > 0) {
+        pickedRefs.push(
+          queryGroups[key][Math.floor(Math.random() * queryGroups[key].length)],
+        );
       }
     }
     getAnimateProps(pickedRefs);
@@ -403,45 +441,32 @@ const App = () => {
 
   const toggleWindowMode = () => {
     window.api.toggleWindowMode();
-    setAlwaysOnTop(!isWindowAlwaysOnTop);
+    setUserConfigs({ ...userConfigs, isWindowAlwaysOnTop: !userConfigs.isWindowAlwaysOnTop });
   };
 
   const excludeCategory = (categoryName: string) => {
-    const exist = excludedCategories.find(e => e.name === categoryName);
+    const exist = excludedCategories.find((e) => e.name === categoryName);
     if (exist) {
-      if(exist.mode === 1) {
-        setExcludedCategories(excludedCategories.map(e => e.name === categoryName ? { name: categoryName, mode: 2 } : e));
+      if (exist.mode === 1) {
+        setExcludedCategories(
+          excludedCategories.map((e) =>
+            e.name === categoryName ? { name: categoryName, mode: 2 } : e,
+          ),
+        );
       } else {
-        setExcludedCategories(excludedCategories.filter(e => e.name !== categoryName));
+        setExcludedCategories(
+          excludedCategories.filter((e) => e.name !== categoryName),
+        );
       }
     } else {
-      setExcludedCategories([...excludedCategories, { name: categoryName, mode: 1 }]);
+      setExcludedCategories([
+        ...excludedCategories,
+        { name: categoryName, mode: 1 },
+      ]);
     }
-  }
+  };
 
-  const closeDownloadModal = () => {
-    setDownloadModal({ show: false, downloadURLs: [] });
-  }
-
-  const openDownloadModal = () => {
-    const downloadURLs: string[] = [];
-    const loop = (category: Category) => {
-      for (const ref of category.references) {
-        const urls = ref.description?.split("\n") || [];
-        const validURL = urls.find(url => /^https:\/\/civitai\.com\/api\/download.*/.test(url));
-        if (validURL) {
-          downloadURLs.push(validURL);
-        }
-      }
-      if (Array.isArray(category.subCategories)) {
-        for (const sub of category.subCategories) {
-          loop(sub);
-        }
-      }
-    };
-    loop(categories);
-    setDownloadModal({ show: true, downloadURLs });
-  }
+  const toggleGridType = () => setUserConfigs({ ...userConfigs, gridType: (userConfigs.gridType + 1) % 3 });
 
   return (
     <div className="container">
@@ -458,12 +483,14 @@ const App = () => {
           onDeleteCategory={deleteCategory}
           onPickReference={onPickReference}
           onViewReference={onViewReference}
+          query={findLabel}
+          gridType={userConfigs.gridType}
         />
       </div>
       <div className="button-mode-container">
         <ButtonMode
           label="Collect"
-          modeActive={modes.collect}
+          modeActive={userConfigs.isCollecting}
           description={DESCRIPTION.COLLECT}
           onModeToggle={startCheckingClipboard}
         />
@@ -509,15 +536,22 @@ const App = () => {
         onConfirm={deleteSafeGuard.onConfirm}
         onCancel={deleteSafeGuard.onCancel}
       />
-      {/* <DownloadModal show={downloadModal.show} downloadURLs={downloadModal.downloadURLs} onClose={closeDownloadModal} /> */}
       <div id="preview">
         <img src="" alt="" />
       </div>
       <BsFillPinAngleFill
-        className={"pin-window " + (isWindowAlwaysOnTop ? "is-on-top" : "")}
+        className={"pin-window " + (userConfigs.isWindowAlwaysOnTop ? "is-on-top" : "")}
         onClick={toggleWindowMode}
       />
-      {/* <FaDownload className="civitai-download" onClick={openDownloadModal} /> */}
+      <TbGridDots
+        className={`grid-dots grid-type-${userConfigs.gridType}`}
+        onClick={toggleGridType}
+      />
+      <div className="find-label">
+        <div>
+          Find ({findCounter}): {findLabel}
+        </div>
+      </div>
     </div>
   );
 };

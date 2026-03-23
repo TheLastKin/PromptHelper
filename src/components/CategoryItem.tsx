@@ -3,11 +3,14 @@ import { AnimateItem, Category, Reference } from "../util/types";
 import ImageView from "./ImageView";
 import { BsArrowsCollapse } from "react-icons/bs";
 import ButtonAction from "./ButtonAction";
+import ReferenceItem from "./ReferenceItem";
 
 type CategoryItemProps = {
   item: Category;
   parentCategories: string[];
   collapseAllNodes?: boolean;
+  query?: string;
+  gridType?: number;
   onAddSubcategory: (parentCategories: string[]) => void;
   onAddReference: (parentCategories: string[]) => void;
   onDeleteCategory: (parentCategories: string[]) => void;
@@ -25,6 +28,8 @@ const CategoryItem = ({
   item,
   parentCategories,
   collapseAllNodes = false,
+  query,
+  gridType = 0,
   onAddSubcategory,
   onAddReference,
   onDeleteCategory,
@@ -155,37 +160,25 @@ const CategoryItem = ({
               onDeleteCategory={onDeleteCategory}
               onPickReference={onPickReference}
               onViewReference={onViewReference}
+              query={query}
+              gridType={gridType}
             />
           ))}
-        {item.references.map((ref: Reference) => {
-          return (
-            <div key={ref.id} id={"node-" + ref.id} className="refs">
-              <ImageView
-                imagePath={`file://${ref.refImage}`}
-                className="ref-node-image"
+        <div className={`references ref-grid-type-${gridType}`}>
+          {item.references.map((ref: Reference) => {
+            return (
+              <ReferenceItem
+                key={ref.id}
+                ref={ref}
+                parentCategories={parentCategories}
+                handleDeleteReference={handleDeleteReference}
+                handlePickReference={handlePickReference}
+                handleViewReference={handleViewReference}
+                query={query}
               />
-              <span className="ref-node" onClick={handleViewReference(ref)}>
-                {ref.mainTag}
-              </span>
-              <span
-                className="pick-node"
-                onClick={handlePickReference(ref.refImage, ref)}
-              >
-                Pick
-              </span>
-              <span
-                className="delete-node"
-                onClick={handleDeleteReference(
-                  ref.id,
-                  ref.refImage,
-                  parentCategories,
-                )}
-              >
-                Delete
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
